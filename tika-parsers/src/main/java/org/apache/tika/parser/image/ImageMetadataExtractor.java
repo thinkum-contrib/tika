@@ -543,7 +543,7 @@ public class ImageMetadataExtractor {
             if (directory.containsTag(IptcDirectory.TAG_KEYWORDS)) {
                 String[] keywords = directory.getStringArray(IptcDirectory.TAG_KEYWORDS);
                 for (String k : keywords) {
-                    metadata.add(TikaCoreProperties.KEYWORDS, k);
+                    metadata.add(TikaCoreProperties.SUBJECT, k);
                 }
             }
             if (directory.containsTag(IptcDirectory.TAG_HEADLINE)) {

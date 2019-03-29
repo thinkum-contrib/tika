@@ -14,21 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.tika.metadata;
+package org.apache.tika.io;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
- * Contains keys to properties in Metadata instances.
+ * <p>A factory which returns a fresh {@link InputStream} for the <em>same</em>
+ *  resource each time.</p>
+ * <p>This is typically desired where it is easier / quicker / simpler to 
+ *  fetch a fresh {@link InputStream} to re-read a given resource, rather
+ *  than do any kind of buffering.</p>
+ * <p>It is typically used with {@link TikaInputStream#get(InputStreamFactory)}
+ *  when combined with a Parser which needs to read the resource's stream
+ *  multiple times when processing.</p>
  */
-public interface TikaMetadataKeys {
-
-    String RESOURCE_NAME_KEY = "resourceName";
-
-    String PROTECTED = "protected";
-
-    String EMBEDDED_RELATIONSHIP_ID = "embeddedRelationshipId";
-
-    String EMBEDDED_STORAGE_CLASS_ID = "embeddedStorageClassId";
-
-    String EMBEDDED_RESOURCE_TYPE = "embeddedResourceType";
-
+public interface InputStreamFactory
+{
+    public InputStream getInputStream() throws IOException;
 }

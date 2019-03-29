@@ -19,9 +19,9 @@ package org.apache.tika.parser.microsoft.ooxml;
 import org.apache.poi.ooxml.POIXMLProperties;
 import org.apache.poi.ooxml.extractor.POIXMLTextExtractor;
 import org.apache.poi.openxml4j.opc.internal.PackagePropertiesPart;
+import org.apache.poi.openxml4j.util.Nullable;
 import org.apache.poi.xssf.extractor.XSSFEventBasedExcelExtractor;
 import org.apache.tika.exception.TikaException;
-import org.apache.tika.metadata.MSOffice;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.Office;
 import org.apache.tika.metadata.OfficeOpenXMLCore;
@@ -86,7 +86,7 @@ public class MetadataExtractor {
                 .getIdentifierProperty());
         addProperty(metadata, OfficeOpenXMLCore.SUBJECT,
                 propsHolder.getSubjectProperty());
-        addProperty(metadata, TikaCoreProperties.KEYWORDS, propsHolder
+        addProperty(metadata, Office.KEYWORDS, propsHolder
                 .getKeywordsProperty());
         setProperty(metadata, TikaCoreProperties.LANGUAGE, propsHolder
                 .getLanguageProperty());
@@ -98,20 +98,10 @@ public class MetadataExtractor {
                 .getModifiedProperty());
         setProperty(metadata, OfficeOpenXMLCore.REVISION, propsHolder
                 .getRevisionProperty());
-        // TODO: Move to OO subject in Tika 2.0
-        setProperty(metadata, TikaCoreProperties.TRANSITION_SUBJECT_TO_OO_SUBJECT,
-                propsHolder.getSubjectProperty());
+
         setProperty(metadata, TikaCoreProperties.TITLE, propsHolder.getTitleProperty());
         setProperty(metadata, OfficeOpenXMLCore.VERSION, propsHolder.getVersionProperty());
 
-        // Legacy Tika-1.0 style stats
-        // TODO Remove these in Tika 2.0
-        setProperty(metadata, Metadata.CATEGORY, propsHolder.getCategoryProperty());
-        setProperty(metadata, Metadata.CONTENT_STATUS, propsHolder
-                .getContentStatusProperty());
-        setProperty(metadata, Metadata.REVISION_NUMBER, propsHolder
-                .getRevisionProperty());
-        setProperty(metadata, Metadata.VERSION, propsHolder.getVersionProperty());
     }
 
     private void extractMetadata(POIXMLProperties.ExtendedProperties properties,
@@ -152,23 +142,6 @@ public class MetadataExtractor {
         setProperty(metadata, Office.WORD_COUNT, propsHolder.getWords());
         setProperty(metadata, Office.CHARACTER_COUNT, propsHolder.getCharacters());
         setProperty(metadata, Office.CHARACTER_COUNT_WITH_SPACES, propsHolder.getCharactersWithSpaces());
-
-        // Legacy Tika-1.0 style stats
-        // TODO Remove these in Tika 2.0
-        setProperty(metadata, Metadata.APPLICATION_NAME, propsHolder.getApplication());
-        setProperty(metadata, Metadata.APPLICATION_VERSION, propsHolder.getAppVersion());
-        setProperty(metadata, Metadata.MANAGER, propsHolder.getManager());
-        setProperty(metadata, Metadata.NOTES, propsHolder.getNotes());
-        setProperty(metadata, Metadata.PRESENTATION_FORMAT, propsHolder.getPresentationFormat());
-        setProperty(metadata, Metadata.TEMPLATE, propsHolder.getTemplate());
-        setProperty(metadata, Metadata.TOTAL_TIME, totalTime);
-        setProperty(metadata, MSOffice.PAGE_COUNT, propsHolder.getPages());
-        setProperty(metadata, MSOffice.SLIDE_COUNT, propsHolder.getSlides());
-        setProperty(metadata, MSOffice.PARAGRAPH_COUNT, propsHolder.getParagraphs());
-        setProperty(metadata, MSOffice.LINE_COUNT, propsHolder.getLines());
-        setProperty(metadata, MSOffice.WORD_COUNT, propsHolder.getWords());
-        setProperty(metadata, MSOffice.CHARACTER_COUNT, propsHolder.getCharacters());
-        setProperty(metadata, MSOffice.CHARACTER_COUNT_WITH_SPACES, propsHolder.getCharactersWithSpaces());
     }
 
     private void extractMetadata(POIXMLProperties.CustomProperties properties,
@@ -255,11 +228,11 @@ public class MetadataExtractor {
         }
     }
 
-    private <T> void setProperty(Metadata metadata, Property property, Optional<T> nullableValue) {
-        if (!nullableValue.isPresent()) {
+    private <T> void setProperty(Metadata metadata, Property property, Optional<T> optionalValue) {
+        if (!optionalValue.isPresent()) {
             return;
         }
-        T value = nullableValue.get();
+        T value = optionalValue.get();
         if (value instanceof Date) {
             metadata.set(property, (Date) value);
         } else if (value instanceof String) {
@@ -271,24 +244,22 @@ public class MetadataExtractor {
         }
     }
 
-    private <T> void addProperty(Metadata metadata, Property property, Optional<T> nullableValue) {
-        if (!nullableValue.isPresent()) {
+    private <T> void addProperty(Metadata metadata, Property property, Optional<T> optionalValue) {
+        if (!optionalValue.isPresent()) {
             return;
         }
-        T value = nullableValue.get();
+        T value = optionalValue.get();
         if (value instanceof String) {
             metadata.add(property, (String) value);
         } else {
-            throw new IllegalArgumentException("Can't add property of class: " + nullableValue.getClass());
+            throw new IllegalArgumentException("Can't add property of class: " + optionalValue.getClass());
         }
     }
 
-    private void setProperty(Metadata metadata, String property, Optional<String> nullableValue) {
-        if (!nullableValue.isPresent()) {
-            return;
+    private void setProperty(Metadata metadata, String name, Nullable<?> value) {
+        if (value.getValue() != null) {
+            setProperty(metadata, name, value.getValue().toString());
         }
-        String value = nullableValue.get();
-        metadata.set(property, value);
     }
 
     private void setProperty(Metadata metadata, Property property, String value) {

@@ -54,8 +54,7 @@ public class DetectorResource {
         String filename = TikaResource.detectFilename(httpHeaders
                 .getRequestHeaders());
         LOG.info("Detecting media type for Filename: {}", filename);
-        met.add(Metadata.RESOURCE_NAME_KEY, filename);
-        TikaResource.checkIsOperating();
+        met.add(TikaCoreProperties.RESOURCE_NAME_KEY, filename);
         long taskId = serverStatus.start(ServerStatus.TASK.DETECT, filename);
         try {
             return TikaResource.getConfig().getDetector().detect(tis, met).toString();

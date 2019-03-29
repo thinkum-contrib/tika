@@ -1,3 +1,40 @@
+Release 2.0.0 - ???
+   BREAKING CHANGES in 2.0.0
+
+   * Remove deprecated Metadata keys/properties (TIKA-1974).
+
+   Other changes
+
+
+Release 1.21 - ????
+
+   * Upgrade PDFBox to 2.0.14 (TIKA-2834).
+
+   * Add CSV detection and replace TXTParser with TextAndCSVParser;
+     users can turn off CSV detection by excluding the TextAndCSVParser
+     and adding back the TXTParser via tika-config (TIKA-2833).
+
+   * Add a CSVParser.  CSV detection is currently based solely on filename
+     and/or information conveyed via Metadata (TIKA-2826).
+
+   * General upgrades: h2, jackcess, opennlp, httpcomponents, zstd-jni, cxf, Lucene (TIKA-2824)
+
+   * Bundle xerces2 with tika-parsers (TIKA-2802).
+
+   * Upgrade jaxb to 2.3.2 (TIKA-2819).
+
+   * Upgrade jackson to 2.9.8 (TIKA-2717).
+
+   * Update tika-eval's common tokens lists (TIKA-2822).
+
+   * Handle bad tags in tika-eval more robustly (TIKA-2810).
+
+   * Add reports for tags in tika-eval (TIKA-2809).
+
+   * Extract text from SDT element within textboxes in .docx files (TIKA-2807).
+
+   * Try to handle truncated OOXML files more robustly (TIKA-2765).
+
 Release 1.20 - 12/17/2018
 
    * Upgrade to POI 4.0.1 (TIKA-2751).

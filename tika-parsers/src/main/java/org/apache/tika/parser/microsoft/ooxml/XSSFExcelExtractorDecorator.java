@@ -57,7 +57,6 @@ import org.apache.poi.xssf.usermodel.helpers.HeaderFooterHelper;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
-import org.apache.tika.metadata.TikaMetadataKeys;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.parser.microsoft.OfficeParserConfig;
 import org.apache.tika.parser.microsoft.TikaExcelDataFormatter;
@@ -117,7 +116,7 @@ public class XSSFExcelExtractorDecorator extends AbstractOOXMLExtractor {
 
         this.metadata = metadata;
         this.parseContext = context;
-        metadata.set(TikaMetadataKeys.PROTECTED, "false");
+        metadata.set(TikaCoreProperties.PROTECTED, "false");
 
         super.getXHTML(handler, metadata, context);
     }
@@ -353,7 +352,7 @@ public class XSSFExcelExtractorDecorator extends AbstractOOXMLExtractor {
             sheetInputStream.close();
 
             if (handler.hasProtection) {
-                metadata.set(TikaMetadataKeys.PROTECTED, "true");
+                metadata.set(TikaCoreProperties.PROTECTED, "true");
             }
         } catch (TikaException e) {
             throw new RuntimeException("SAX parser appears to be broken - " + e.getMessage());

@@ -37,7 +37,6 @@ import org.apache.poi.xssf.usermodel.XSSFShape;
 import org.apache.tika.exception.TikaException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
-import org.apache.tika.metadata.TikaMetadataKeys;
 import org.apache.tika.parser.ParseContext;
 import org.apache.tika.sax.XHTMLContentHandler;
 import org.apache.xmlbeans.XmlException;
@@ -66,7 +65,7 @@ public class XSSFBExcelExtractorDecorator extends XSSFExcelExtractorDecorator {
 
         this.metadata = metadata;
         this.parseContext = context;
-        metadata.set(TikaMetadataKeys.PROTECTED, "false");
+        metadata.set(TikaCoreProperties.PROTECTED, "false");
 
         super.getXHTML(handler, metadata, context);
     }

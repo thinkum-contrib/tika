@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.apache.james.mime4j.stream.MimeConfig;
+import org.apache.tika.Tika;
 import org.apache.tika.TikaTest;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.exception.TikaException;
@@ -57,6 +58,7 @@ import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.PasswordProvider;
 import org.apache.tika.parser.RecursiveParserWrapper;
 import org.apache.tika.parser.ocr.TesseractOCRParserTest;
+import org.apache.tika.sax.AbstractRecursiveParserWrapperHandler;
 import org.apache.tika.sax.BodyContentHandler;
 import org.apache.tika.sax.XHTMLContentHandler;
 import org.junit.BeforeClass;
@@ -108,7 +110,7 @@ public class RFC822ParserTest extends TikaTest {
             assertEquals("[jira] Commented: (TIKA-461) RFC822 messages not parsed",
                     metadata.get(TikaCoreProperties.TITLE));
             assertEquals("[jira] Commented: (TIKA-461) RFC822 messages not parsed",
-                    metadata.get(Metadata.SUBJECT));
+                    metadata.get(TikaCoreProperties.SUBJECT));
         } catch (Exception e) {
             fail("Exception thrown: " + e.getMessage());
         }
@@ -235,7 +237,7 @@ public class RFC822ParserTest extends TikaTest {
             assertEquals("If you can read this you understand the example.",
                     metadata.get(TikaCoreProperties.TITLE));
             assertEquals("If you can read this you understand the example.",
-                    metadata.get(Metadata.SUBJECT));
+                    metadata.get(TikaCoreProperties.SUBJECT));
         } catch (Exception e) {
             fail("Exception thrown: " + e.getMessage());
         }
@@ -257,7 +259,26 @@ public class RFC822ParserTest extends TikaTest {
         assertEquals("Air Permit Programs | Air & Radiation | US EPA",
                 metadata.get(TikaCoreProperties.TITLE));
         assertEquals("Air Permit Programs | Air & Radiation | US EPA",
-                metadata.get(Metadata.SUBJECT));
+                metadata.get(TikaCoreProperties.SUBJECT));
+    }
+
+    @Test
+    public void testMainBody() throws Exception {
+        //test that the first text or html chunk is processed in the main body
+        //not treated as an attachment. TIKA-2547
+        List<Metadata> metadataList = getRecursiveMetadata("testRFC822_oddfrom");
+        assertEquals(7, metadataList.size());
+        assertContains("Air Quality Planning", metadataList.get(0).get(AbstractRecursiveParserWrapperHandler.TIKA_CONTENT));
+
+        //Make sure text alternative doesn't get treated as an attachment
+        metadataList = getRecursiveMetadata("testRFC822_normal_zip");
+        assertEquals(3, metadataList.size());
+        assertContains("This is the HTML part", metadataList.get(0).get(AbstractRecursiveParserWrapperHandler.TIKA_CONTENT));
+        assertEquals("application/zip", metadataList.get(2).get(Metadata.CONTENT_TYPE));
+
+        metadataList = getRecursiveMetadata("testRFC822-txt-body");
+        assertEquals(2, metadataList.size());
+        assertContains("body 1", metadataList.get(0).get(AbstractRecursiveParserWrapperHandler.TIKA_CONTENT));
     }
 
     @Test
@@ -332,7 +353,7 @@ public class RFC822ParserTest extends TikaTest {
         assertEquals("abc", metadata.getValues(Metadata.MESSAGE_TO)[0]);
         assertEquals("def", metadata.getValues(Metadata.MESSAGE_TO)[1]);
         assertEquals("abcd", metadata.get(TikaCoreProperties.TITLE));
-        assertEquals("abcd", metadata.get(Metadata.SUBJECT));
+        assertEquals("abcd", metadata.get(TikaCoreProperties.SUBJECT));
         assertContains("bar biz bat", handler.toString());
     }
 
@@ -570,8 +591,8 @@ public class RFC822ParserTest extends TikaTest {
         assertEquals(4, metadataList.size());
         assertEquals("text/plain; charset=UTF-8", metadataList.get(1).get(Metadata.CONTENT_TYPE));
         assertEquals("image/png", metadataList.get(2).get(Metadata.CONTENT_TYPE));
-        assertEquals("testPNG.png", metadataList.get(2).get(Metadata.RESOURCE_NAME_KEY));
-        assertContains("This email has a PNG attachment included in it", metadataList.get(1).get(RecursiveParserWrapper.TIKA_CONTENT));
+        assertEquals("testPNG.png", metadataList.get(2).get(TikaCoreProperties.RESOURCE_NAME_KEY));
+        assertContains("This email has a PNG attachment included in it", metadataList.get(1).get(AbstractRecursiveParserWrapperHandler.TIKA_CONTENT));
         assertEquals(null, metadataList.get(1).get(Metadata.CONTENT_DISPOSITION));
         assertEquals("attachment; filename=\"testPNG.png\"", metadataList.get(2).get(Metadata.CONTENT_DISPOSITION));
     }
@@ -589,7 +610,7 @@ public class RFC822ParserTest extends TikaTest {
         assertEquals("text/html; charset=UTF-8", seenMetadata.get(2).get(Metadata.CONTENT_TYPE));
         assertEquals("UTF-8", seenMetadata.get(2).get(Metadata.CONTENT_ENCODING));
         assertEquals("attachment; filename=\"logo.gif\"", seenMetadata.get(3).get(Metadata.CONTENT_DISPOSITION));
-        assertEquals("logo.gif", seenMetadata.get(3).get(Metadata.RESOURCE_NAME_KEY));
+        assertEquals("logo.gif", seenMetadata.get(3).get(TikaCoreProperties.RESOURCE_NAME_KEY));
         assertEquals("image/gif", seenMetadata.get(3).get(Metadata.CONTENT_TYPE));
     }
 
@@ -627,12 +648,12 @@ public class RFC822ParserTest extends TikaTest {
          */
         List<Metadata> metadataList = getRecursiveMetadata("testRFC822-multipart");
         assertEquals(2, metadataList.size());
-        String body = metadataList.get(0).get(RecursiveParserWrapper.TIKA_CONTENT);
+        String body = metadataList.get(0).get(AbstractRecursiveParserWrapperHandler.TIKA_CONTENT);
         assertContains("body 2", body);
         assertNotContained("body 1", body);
         assertEquals("message/rfc822", metadataList.get(0).get(Metadata.CONTENT_TYPE));
         assertEquals("image/gif", metadataList.get(1).get(Metadata.CONTENT_TYPE));
-        assertEquals("/logo.gif", metadataList.get(1).get(RecursiveParserWrapper.EMBEDDED_RESOURCE_PATH));
+        assertEquals("/logo.gif", metadataList.get(1).get(AbstractRecursiveParserWrapperHandler.EMBEDDED_RESOURCE_PATH));
     }
 
     @Test
@@ -651,17 +672,17 @@ public class RFC822ParserTest extends TikaTest {
         List<Metadata> metadataList = getRecursiveMetadata("testRFC822-mixed-simple");
         assertEquals(3, metadataList.size());
 
-        assertContains("body 2", metadataList.get(0).get(RecursiveParserWrapper.TIKA_CONTENT));
-        assertNotContained("body 1", metadataList.get(0).get(RecursiveParserWrapper.TIKA_CONTENT));
+        assertContains("body 2", metadataList.get(0).get(AbstractRecursiveParserWrapperHandler.TIKA_CONTENT));
+        assertNotContained("body 1", metadataList.get(0).get(AbstractRecursiveParserWrapperHandler.TIKA_CONTENT));
         assertEquals("message/rfc822", metadataList.get(0).get(Metadata.CONTENT_TYPE));
 
         assertEquals("image/jpeg", metadataList.get(1).get(Metadata.CONTENT_TYPE));
-        assertEquals("/Mary with cooler.jpeg", metadataList.get(1).get(RecursiveParserWrapper.EMBEDDED_RESOURCE_PATH));
+        assertEquals("/Mary with cooler.jpeg", metadataList.get(1).get(AbstractRecursiveParserWrapperHandler.EMBEDDED_RESOURCE_PATH));
         assertEquals(TikaCoreProperties.EmbeddedResourceType.INLINE.toString(),
                 metadataList.get(1).get(TikaCoreProperties.EMBEDDED_RESOURCE_TYPE));
 
         assertEquals("image/jpeg", metadataList.get(2).get(Metadata.CONTENT_TYPE));
-        assertEquals("/mary-coffee.jpg", metadataList.get(2).get(RecursiveParserWrapper.EMBEDDED_RESOURCE_PATH));
+        assertEquals("/mary-coffee.jpg", metadataList.get(2).get(AbstractRecursiveParserWrapperHandler.EMBEDDED_RESOURCE_PATH));
         assertEquals(TikaCoreProperties.EmbeddedResourceType.ATTACHMENT.toString(),
                 metadataList.get(2).get(TikaCoreProperties.EMBEDDED_RESOURCE_TYPE));
     }
@@ -682,13 +703,20 @@ public class RFC822ParserTest extends TikaTest {
          */
         List<Metadata> metadataList = getRecursiveMetadata("testRFC822-mixed-with-pdf-inline");
         assertEquals(2, metadataList.size());
-        String body = metadataList.get(0).get(RecursiveParserWrapper.TIKA_CONTENT);
+        String body = metadataList.get(0).get(AbstractRecursiveParserWrapperHandler.TIKA_CONTENT);
         assertContains("body 2", body);
         assertContains("body 3", body);
         assertNotContained("body 1", body);
         assertEquals("message/rfc822", metadataList.get(0).get(Metadata.CONTENT_TYPE));
         assertEquals("application/pdf", metadataList.get(1).get(Metadata.CONTENT_TYPE));
-        assertEquals("/tzora-titan-4-hummer-xl-manual.pdf", metadataList.get(1).get(RecursiveParserWrapper.EMBEDDED_RESOURCE_PATH));
+        assertEquals("/tzora-titan-4-hummer-xl-manual.pdf", metadataList.get(1).get(AbstractRecursiveParserWrapperHandler.EMBEDDED_RESOURCE_PATH));
+    }
+
+    @Test
+    public void testSimpleBodyInlined() throws Exception {
+        List<Metadata> metadataList = getRecursiveMetadata("testRFC822_simple_inline_body.txt");
+        assertEquals(1, metadataList.size());
+        assertContains("asked", metadataList.get(0).get(AbstractRecursiveParserWrapperHandler.TIKA_CONTENT));
     }
 
     @Test

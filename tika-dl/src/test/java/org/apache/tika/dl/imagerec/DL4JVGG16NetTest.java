@@ -16,14 +16,14 @@
  */
 package org.apache.tika.dl.imagerec;
 
+import static org.junit.Assert.assertTrue;
+
 import org.apache.tika.Tika;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.metadata.Metadata;
 import org.junit.Test;
 
 import java.io.InputStream;
-
-import static org.junit.Assert.assertTrue;
 
 public class DL4JVGG16NetTest {
 

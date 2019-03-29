@@ -19,13 +19,14 @@
   under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <parent>
         <groupId>org.apache.tika</groupId>
         <artifactId>tika-parent</artifactId>
-        <version>1.20</version>
+        <version>2.0.0-SNAPSHOT</version>
         <relativePath>../tika-parent/pom.xml</relativePath>
     </parent>
 
@@ -56,15 +57,28 @@
             <version>3.6.1</version>
         </dependency>
 
+        <!-- check if exclusion from oss-index check
+            is necessary on next upgrade -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <version>1.4.197</version>
+            <version>1.4.198</version>
         </dependency>
         <dependency>
             <groupId>com.optimaize.languagedetector</groupId>
             <artifactId>language-detector</artifactId>
             <version>0.6</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>27.0.1-jre</version>
         </dependency>
         <dependency>
             <groupId>commons-cli</groupId>
@@ -167,33 +181,18 @@
                             </createDependencyReducedPom>
                             <!-- <filters> -->
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>org.apache.tika.eval.TikaEvalCLI</mainClass>
                                 </transformer>
 
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <artifactId>maven-remote-resources-plugin</artifactId>
-                <version>1.5</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>bundle</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <includes>
-                        <include>**/*.xml</include>
-                    </includes>
-                </configuration>
-            </plugin>
-
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
@@ -239,6 +238,20 @@
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.ossindex.maven</groupId>
+                <artifactId>ossindex-maven-plugin</artifactId>
+                <configuration>
+                    <!-- ignore this until 1.4.198 is available -->
+                    <excludeCoordinates>
+                        <exclude>
+                            <groupId>com.h2database</groupId>
+                            <artifactId>h2</artifactId>
+                            <version>1.4.197</version>
+                        </exclude>
+                    </excludeCoordinates>
+                </configuration>
             </plugin>
             <plugin>
                 <artifactId>maven-failsafe-plugin</artifactId>

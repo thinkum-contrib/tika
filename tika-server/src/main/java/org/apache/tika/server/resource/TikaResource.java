@@ -27,7 +27,6 @@ import org.apache.tika.detect.Detector;
 import org.apache.tika.exception.EncryptedDocumentException;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
-import org.apache.tika.metadata.TikaMetadataKeys;
 import org.apache.tika.mime.MediaType;
 import org.apache.tika.parser.AutoDetectParser;
 import org.apache.tika.parser.DigestingParser;
@@ -36,7 +35,6 @@ import org.apache.tika.parser.Parser;
 import org.apache.tika.parser.ParserDecorator;
 import org.apache.tika.parser.PasswordProvider;
 import org.apache.tika.parser.html.BoilerpipeContentHandler;
-import org.apache.tika.parser.html.HtmlParser;
 import org.apache.tika.parser.ocr.TesseractOCRConfig;
 import org.apache.tika.parser.pdf.PDFParserConfig;
 import org.apache.tika.sax.BodyContentHandler;
@@ -76,7 +74,6 @@ import java.io.Writer;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -113,10 +110,6 @@ public class TikaResource {
     @SuppressWarnings("serial")
     public static Parser createParser() {
         final Parser parser = new AutoDetectParser(tikaConfig);
-
-        Map<MediaType, Parser> parsers = ((AutoDetectParser)parser).getParsers();
-        parsers.put(MediaType.APPLICATION_XML, new HtmlParser());
-        ((AutoDetectParser)parser).setParsers(parsers);
 
         ((AutoDetectParser)parser).setFallback(new Parser() {
             public Set<MediaType> getSupportedTypes(ParseContext parseContext) {
@@ -230,6 +223,10 @@ public class TikaResource {
                     clazz = boolean.class;
                 } else if (field.getType() == Boolean.class) {
                     clazz = Boolean.class;
+                } else if (field.getType() == long.class) {
+                    clazz = long.class;
+                } else if (field.getType() == Long.class) {
+                    clazz = Long.class;
                 }
             }
 
@@ -254,6 +251,8 @@ public class TikaResource {
                     m.invoke(object, Boolean.parseBoolean(val));
                 } else if (clazz == float.class || clazz == Float.class) {
                     m.invoke(object, Float.parseFloat(val));
+                } else if (clazz == long.class || clazz == Long.class) {
+                    m.invoke(object, Long.parseLong(val));
                 } else {
                     throw new IllegalArgumentException("setter must be String, int, float, double or boolean...for now");
                 }
@@ -302,7 +301,7 @@ public class TikaResource {
     public static void fillMetadata(Parser parser, Metadata metadata, ParseContext context, MultivaluedMap<String, String> httpHeaders) {
         String fileName = detectFilename(httpHeaders);
         if (fileName != null) {
-            metadata.set(TikaMetadataKeys.RESOURCE_NAME_KEY, fileName);
+            metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, fileName);
         }
 
         String contentTypeHeader = httpHeaders.getFirst(HttpHeaders.CONTENT_TYPE);
@@ -394,7 +393,7 @@ public class TikaResource {
                              ContentHandler handler, Metadata metadata, ParseContext parseContext) throws IOException {
 
         checkIsOperating();
-        String fileName = metadata.get(Metadata.RESOURCE_NAME_KEY);
+        String fileName = metadata.get(TikaCoreProperties.RESOURCE_NAME_KEY);
         long taskId = SERVER_STATUS.start(ServerStatus.TASK.PARSE,
                 fileName);
         try {

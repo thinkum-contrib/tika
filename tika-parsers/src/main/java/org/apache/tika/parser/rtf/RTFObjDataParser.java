@@ -186,7 +186,7 @@ class RTFObjDataParser {
                     is.reset();
                     IOUtils.copy(is, out);
                     ret = out.toByteArray();
-                    metadata.set(Metadata.RESOURCE_NAME_KEY, "file_" + unknownFilenameCount.getAndIncrement() + "." + type.getExtension());
+                    metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, "file_" + unknownFilenameCount.getAndIncrement() + "." + type.getExtension());
                     metadata.set(Metadata.CONTENT_TYPE, type.getType().toString());
                 }
             }
@@ -259,8 +259,8 @@ class RTFObjDataParser {
             pathToUse = ansiFilePath == null ? "" : ansiFilePath;
         }
         metadata.set(TikaCoreProperties.ORIGINAL_RESOURCE_NAME, fileNameToUse);
-        metadata.set(Metadata.RESOURCE_NAME_KEY, FilenameUtils.getName(fileNameToUse));
-        metadata.set(Metadata.EMBEDDED_RELATIONSHIP_ID, pathToUse);
+        metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, FilenameUtils.getName(fileNameToUse));
+        metadata.set(TikaCoreProperties.EMBEDDED_RELATIONSHIP_ID, pathToUse);
 
         return objBytes;
     }

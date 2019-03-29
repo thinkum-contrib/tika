@@ -33,6 +33,7 @@ import java.net.URL;
 import org.apache.tika.Tika;
 import org.apache.tika.config.TikaConfig;
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -1172,6 +1173,17 @@ public class TestMimeTypes {
     }
 
     @Test
+    public void testDolbyDigitalAC3() throws Exception {
+        // By name, both come as AC3, as same extension
+        assertTypeByName("audio/ac3", "testAC3.ac3");
+        assertTypeByName("audio/ac3", "testEAC3.ac3");
+
+        // With data can detect EAC3 subtype
+        assertTypeByData("audio/ac3", "testAC3.ac3");
+        assertTypeByData("audio/eac3", "testEAC3.ac3");
+    }
+
+    @Test
     public void testNLS() throws Exception {
         assertTypeByData("application/x-ms-nls", "testNLS1.nls");
         assertTypeByData("application/x-ms-nls", "testNLS2.nls");
@@ -1197,7 +1209,7 @@ public class TestMimeTypes {
                 "/test-documents/" + filename)) {
             assertNotNull("Test file not found: " + filename, stream);
             Metadata metadata = new Metadata();
-            metadata.set(Metadata.RESOURCE_NAME_KEY, filename);
+            metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, filename);
             assertEquals(expected, repo.detect(stream, metadata).toString());
         }
     }
@@ -1205,7 +1217,7 @@ public class TestMimeTypes {
     private void assertTypeByName(String expected, String filename)
             throws IOException {
         Metadata metadata = new Metadata();
-        metadata.set(Metadata.RESOURCE_NAME_KEY, filename);
+        metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, filename);
         assertEquals(expected, repo.detect(null, metadata).toString());
     }
 
@@ -1249,7 +1261,7 @@ public class TestMimeTypes {
                 "/test-documents/" + filename)) {
             assertNotNull("Test document not found: " + filename, stream);
             Metadata metadata = new Metadata();
-            metadata.set(Metadata.RESOURCE_NAME_KEY, filename);
+            metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, filename);
             return repo.detect(stream, metadata);
         }
     }

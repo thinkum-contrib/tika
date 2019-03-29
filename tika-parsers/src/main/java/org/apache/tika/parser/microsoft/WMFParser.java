@@ -62,6 +62,7 @@ public class WMFParser extends AbstractParser {
         xhtml.startDocument();
         try {
             HwmfPicture picture = new HwmfPicture(stream);
+            Charset charset = LocaleUtil.CHARSET_1252;
             //TODO: make x/y info public in POI so that we can use it here
             //to determine when to keep two text parts on the same line
             Charset charset = LocaleUtil.CHARSET_1252;

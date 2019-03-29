@@ -104,7 +104,7 @@ public class MP4Parser extends AbstractParser {
              "mp41", "mp42"));
        typesMap.put(MediaType.video("x-m4v"), Arrays.asList(
              "M4V ", "M4VH", "M4VP"));
-       
+
        typesMap.put(MediaType.video("quicktime"), Collections.<String>emptyList());
        typesMap.put(MediaType.application("mp4"), Collections.<String>emptyList());
     }
@@ -166,12 +166,12 @@ public class MP4Parser extends AbstractParser {
                 xhtml.startDocument();
 
 
-                // Pull out some information from the header box
-                MovieHeaderBox mHeader = getOrNull(moov, MovieHeaderBox.class);
-                if (mHeader != null) {
-                    // Get the creation and modification dates
-                    metadata.set(Metadata.CREATION_DATE, mHeader.getCreationTime());
-                    metadata.set(TikaCoreProperties.MODIFIED, mHeader.getModificationTime());
+            // Pull out some information from the header box
+            MovieHeaderBox mHeader = getOrNull(moov, MovieHeaderBox.class);
+            if (mHeader != null) {
+                // Get the creation and modification dates
+                metadata.set(TikaCoreProperties.CREATED, mHeader.getCreationTime());
+                metadata.set(TikaCoreProperties.MODIFIED, mHeader.getModificationTime());
 
                     // Get the duration
                     double durationSeconds = ((double) mHeader.getDuration()) / mHeader.getTimescale();

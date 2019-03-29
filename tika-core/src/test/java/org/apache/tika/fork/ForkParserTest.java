@@ -33,15 +33,16 @@ import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
 import org.apache.tika.TikaTest;
 import org.apache.tika.exception.TikaException;
-import org.apache.tika.metadata.DublinCore;
 import org.apache.tika.io.IOUtils;
 import org.apache.tika.metadata.Metadata;
 import org.apache.tika.metadata.TikaCoreProperties;
@@ -55,7 +56,7 @@ import org.apache.tika.sax.BasicContentHandlerFactory;
 import org.apache.tika.sax.BodyContentHandler;
 import org.apache.tika.sax.ContentHandlerFactory;
 import org.apache.tika.sax.RecursiveParserWrapperHandler;
-import org.junit.Ignore;
+import org.apache.tika.sax.ToTextContentHandler;
 import org.junit.Test;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.SAXException;
@@ -65,10 +66,7 @@ public class ForkParserTest extends TikaTest {
 
     @Test
     public void testHelloWorld() throws Exception {
-        ForkParser parser = new ForkParser(
-                ForkParserTest.class.getClassLoader(),
-                new ForkTestParser());
-        try {
+        try (ForkParser parser = new ForkParser(ForkParserTest.class.getClassLoader(), new ForkTestParser())) {
             Metadata metadata = new Metadata();
             ContentHandler output = new BodyContentHandler();
             InputStream stream = new ByteArrayInputStream(new byte[0]);
@@ -76,17 +74,12 @@ public class ForkParserTest extends TikaTest {
             parser.parse(stream, output, metadata, context);
             assertEquals("Hello, World!", output.toString().trim());
             assertEquals("text/plain", metadata.get(Metadata.CONTENT_TYPE));
-        } finally {
-            parser.close();
         }
     }
 
     @Test
     public void testSerialParsing() throws Exception {
-        ForkParser parser = new ForkParser(
-                ForkParserTest.class.getClassLoader(),
-                new ForkTestParser());
-        try {
+        try (ForkParser parser = new ForkParser(ForkParserTest.class.getClassLoader(), new ForkTestParser())) {
             ParseContext context = new ParseContext();
             for (int i = 0; i < 10; i++) {
                 ContentHandler output = new BodyContentHandler();
@@ -94,17 +87,12 @@ public class ForkParserTest extends TikaTest {
                 parser.parse(stream, output, new Metadata(), context);
                 assertEquals("Hello, World!", output.toString().trim());
             }
-        } finally {
-            parser.close();
         }
     }
 
     @Test
     public void testParallelParsing() throws Exception {
-        final ForkParser parser = new ForkParser(
-                ForkParserTest.class.getClassLoader(),
-                new ForkTestParser());
-        try {
+        try (ForkParser parser = new ForkParser(ForkParserTest.class.getClassLoader(), new ForkTestParser())) {
             final ParseContext context = new ParseContext();
 
             Thread[] threads = new Thread[10];
@@ -130,17 +118,12 @@ public class ForkParserTest extends TikaTest {
                 threads[i].join();
                 assertEquals("Hello, World!", output[i].toString().trim());
             }
-        } finally {
-            parser.close();
         }
     }
 
     @Test
     public void testPoolSizeReached() throws Exception {
-        final ForkParser parser = new ForkParser(
-                ForkParserTest.class.getClassLoader(),
-                new ForkTestParser());
-        try {
+        try (ForkParser parser = new ForkParser(ForkParserTest.class.getClassLoader(), new ForkTestParser())) {
             final Semaphore barrier = new Semaphore(0);
 
             Thread[] threads = new Thread[parser.getPoolSize()];
@@ -201,8 +184,6 @@ public class ForkParserTest extends TikaTest {
 
             blocked.join();
             assertEquals("Hello, World!", o.toString().trim());
-        } finally {
-            parser.close();
         }
     }
 
@@ -248,10 +229,8 @@ public class ForkParserTest extends TikaTest {
 
     @Test
     public void testPackageCanBeAccessed() throws Exception {
-        ForkParser parser = new ForkParser(
-                ForkParserTest.class.getClassLoader(),
-                new ForkTestParser.ForkTestParserAccessingPackage());
-        try {
+        try (ForkParser parser = new ForkParser(ForkParserTest.class.getClassLoader(),
+                new ForkTestParser.ForkTestParserAccessingPackage())) {
             Metadata metadata = new Metadata();
             ContentHandler output = new BodyContentHandler();
             InputStream stream = new ByteArrayInputStream(new byte[0]);
@@ -259,10 +238,9 @@ public class ForkParserTest extends TikaTest {
             parser.parse(stream, output, metadata, context);
             assertEquals("Hello, World!", output.toString().trim());
             assertEquals("text/plain", metadata.get(Metadata.CONTENT_TYPE));
-        } finally {
-            parser.close();
         }
     }
+
     @Test
     public void testRecursiveParserWrapper() throws Exception {
         Parser parser = new AutoDetectParser();
@@ -280,12 +258,12 @@ public class ForkParserTest extends TikaTest {
         }
         List<Metadata> metadataList = handler.getMetadataList();
         Metadata m0 = metadataList.get(0);
-        assertEquals("Nikolai Lobachevsky", m0.get(DublinCore.CREATOR));
+        assertEquals("Nikolai Lobachevsky", m0.get(TikaCoreProperties.CREATOR));
         assertContains("main_content", m0.get(RecursiveParserWrapperHandler.TIKA_CONTENT));
         assertContains("embed1.xml", m0.get(RecursiveParserWrapperHandler.TIKA_CONTENT));
 
         Metadata m1 = metadataList.get(1);
-        assertEquals("embeddedAuthor", m1.get(DublinCore.CREATOR));
+        assertEquals("embeddedAuthor", m1.get(TikaCoreProperties.CREATOR));
         assertContains("some_embedded_content", m1.get(RecursiveParserWrapperHandler.TIKA_CONTENT));
         assertEquals("/embed1.xml", m1.get(RecursiveParserWrapperHandler.EMBEDDED_RESOURCE_PATH));
     }
@@ -307,12 +285,12 @@ public class ForkParserTest extends TikaTest {
         }
         List<Metadata> metadataList = handler.getMetadataList();
         Metadata m0 = metadataList.get(0);
-        assertEquals("Nikolai Lobachevsky", m0.get(DublinCore.CREATOR));
+        assertEquals("Nikolai Lobachevsky", m0.get(TikaCoreProperties.CREATOR));
         assertContains("main_content", m0.get(RecursiveParserWrapperHandler.TIKA_CONTENT));
         assertContains("embed1.xml", m0.get(RecursiveParserWrapperHandler.TIKA_CONTENT));
 
         Metadata m1 = metadataList.get(1);
-        assertEquals("embeddedAuthor", m1.get(DublinCore.CREATOR));
+        assertEquals("embeddedAuthor", m1.get(TikaCoreProperties.CREATOR));
         assertContains("some_embedded_content", m1.get(RecursiveParserWrapperHandler.TIKA_CONTENT));
         assertEquals("/embed1.xml", m1.get(RecursiveParserWrapperHandler.EMBEDDED_RESOURCE_PATH));
         assertContains("another null pointer exception", m1.get(RecursiveParserWrapperHandler.EMBEDDED_EXCEPTION));
@@ -339,12 +317,12 @@ public class ForkParserTest extends TikaTest {
         }
         List<Metadata> metadataList = handler.getMetadataList();
         Metadata m0 = metadataList.get(0);
-        assertEquals("Nikolai Lobachevsky", m0.get(DublinCore.CREATOR));
+        assertEquals("Nikolai Lobachevsky", m0.get(TikaCoreProperties.CREATOR));
         assertContains("main_content", m0.get(RecursiveParserWrapperHandler.TIKA_CONTENT));
         assertContains("embed1.xml", m0.get(RecursiveParserWrapperHandler.TIKA_CONTENT));
 
         Metadata m1 = metadataList.get(1);
-        assertEquals("embeddedAuthor", m1.get(DublinCore.CREATOR));
+        assertEquals("embeddedAuthor", m1.get(TikaCoreProperties.CREATOR));
         assertContains("some_embedded_content", m1.get(RecursiveParserWrapperHandler.TIKA_CONTENT));
         assertEquals("/embed1.xml", m1.get(RecursiveParserWrapperHandler.EMBEDDED_RESOURCE_PATH));
     }

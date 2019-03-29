@@ -38,6 +38,8 @@ import java.sql.Blob;
 import java.sql.SQLException;
 
 import org.apache.tika.metadata.Metadata;
+import org.apache.tika.metadata.TikaCoreProperties;
+import org.apache.tika.parser.Parser;
 
 /**
  * Input stream with extended capabilities. The purpose of this class is
@@ -222,7 +224,7 @@ public class TikaInputStream extends TaggedInputStream {
      */
     public static TikaInputStream get(Path path, Metadata metadata)
             throws IOException {
-        metadata.set(Metadata.RESOURCE_NAME_KEY, path.getFileName().toString());
+        metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, path.getFileName().toString());
         metadata.set(Metadata.CONTENT_LENGTH, Long.toString(Files.size(path)));
         return new TikaInputStream(path);
     }
@@ -262,9 +264,34 @@ public class TikaInputStream extends TaggedInputStream {
     @Deprecated
     public static TikaInputStream get(File file, Metadata metadata)
             throws FileNotFoundException {
-        metadata.set(Metadata.RESOURCE_NAME_KEY, file.getName());
+        metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, file.getName());
         metadata.set(Metadata.CONTENT_LENGTH, Long.toString(file.length()));
         return new TikaInputStream(file);
+    }
+    
+    /**
+     * Creates a TikaInputStream from a Factory which can create
+     *  fresh {@link InputStream}s for the same resource multiple times.
+     * <p>This is typically desired when working with {@link Parser}s that
+     *  need to re-read the stream multiple times, where other forms
+     *  of buffering (eg File) are slower than just getting a fresh
+     *  new stream each time.
+     */
+    public static TikaInputStream get(InputStreamFactory factory) throws IOException {
+        return get(factory, new TemporaryResources());
+    }
+    /**
+     * Creates a TikaInputStream from a Factory which can create
+     *  fresh {@link InputStream}s for the same resource multiple times.
+     * <p>This is typically desired when working with {@link Parser}s that
+     *  need to re-read the stream multiple times, where other forms
+     *  of buffering (eg File) are slower than just getting a fresh
+     *  new stream each time.
+     */
+    public static TikaInputStream get(InputStreamFactory factory, TemporaryResources tmp) throws IOException {
+        TikaInputStream stream = get(factory.getInputStream(), tmp);
+        stream.steamFactory = factory;
+        return stream;
     }
 
     /**
@@ -410,7 +437,7 @@ public class TikaInputStream extends TaggedInputStream {
         String path = url.getPath();
         int slash = path.lastIndexOf('/');
         if (slash + 1 < path.length()) { // works even with -1!
-            metadata.set(Metadata.RESOURCE_NAME_KEY, path.substring(slash + 1));
+            metadata.set(TikaCoreProperties.RESOURCE_NAME_KEY, path.substring(slash + 1));
         }
 
         String type = connection.getContentType();
@@ -432,6 +459,12 @@ public class TikaInputStream extends TaggedInputStream {
                 new BufferedInputStream(connection.getInputStream()),
                 new TemporaryResources(), length);
     }
+    
+    /**
+     * The Factory that can create fresh {@link InputStream}s for
+     *  the resource this reads for, eg when needing to re-read.
+     */
+    private InputStreamFactory steamFactory;
 
     /**
      * The path to the file that contains the contents of this stream.
@@ -552,10 +585,10 @@ public class TikaInputStream extends TaggedInputStream {
     }
     
     /**
-     * Returns the open container object, such as a
-     *  POIFS FileSystem in the event of an OLE2
-     *  document being detected and processed by
-     *  the OLE2 detector. 
+     * Returns the open container object if any, such as a
+     *  POIFS FileSystem in the event of an OLE2 document 
+     *  being detected and processed by the OLE2 detector.
+     * @return Open Container for this stream, or <code>null</code> if none 
      */
     public Object getOpenContainer() {
         return openContainer;
@@ -572,6 +605,18 @@ public class TikaInputStream extends TaggedInputStream {
         if (container instanceof Closeable) {
             tmp.addResource((Closeable) container);
         }
+    }
+    
+    public boolean hasInputStreamFactory() {
+        return steamFactory != null;
+    }
+    
+    /**
+     * If the Stream was created from an {@link InputStreamFactory},
+     *  return that, otherwise <code>null</code>.
+     */
+    public InputStreamFactory getInputStreamFactory() {
+        return steamFactory;
     }
 
     public boolean hasFile() {
